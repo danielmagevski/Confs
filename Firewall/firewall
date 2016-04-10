@@ -1,0 +1,249 @@
+#!/bin/bash
+
+
+#####ESSE ARQUIVO DEVE FICAR NO "/etc.init.d" E COM PERMISSAO DE EXECUÇÃO#######
+
+REDE_INTERNA="10.0.0.0/8"
+
+echo "=========================================="
+echo "       Firewall Simples                   #"
+echo "  Contato: Daniel Magevski                #"
+echo "  E-mail: daniel_magevski@hotmail.com     #"
+echo "  PGP KEY ID  457EAC7E                    #"
+echo "  Twitter @DanielMagevski                 #"
+echo "                                          #"
+echo "=========================================="
+
+
+### Limpando as regras ###
+iptables -F INPUT
+iptables -F OUTPUT
+iptables -F FORWARD
+iptables -F
+iptables -X
+iptables -t nat -F
+iptables -t nat -X
+echo "LIMPANDO TODAS AS REGRAS ......................................[ OK ]"
+
+# CADEAIS PADROES
+iptables -P INPUT DROP
+iptables -P FORWARD DROP
+iptables -P OUTPUT ACCEPT
+echo "CADEIAS PADROES ......................................[ OK ]"
+
+# BLOQUANDO ALGUNS IPs
+iptables -I FORWARD -s 92.255.176.55 -j DROP
+iptables -I FORWARD -s 76.74.112.108 -j DROP
+iptables -I FORWARD -s 93.174.95.77 -j DROP
+iptables -I FORWARD -s 211.37.220.146 -j DROP
+iptables -I FORWARD -s 212.129.57.149 -j DROP
+iptables -I FORWARD -s 213.123.216.219 -j DROP
+iptables -I FORWARD -s 200.208.159.21 -j DROP
+iptables -I FORWARD -s 72.64.230.14 -j DROP
+iptables -I FORWARD -s 116.21.174.93 -j DROP
+iptables -A INPUT -s 116.21.174.93 -j DROP
+iptables -I FORWARD -s 173.162.202.41 -j DROP
+iptables -A INPUT -s 173.162.202.41 -j DROP
+echo "BLOQUEANDO IPs........................................[ OK ]"
+
+### DESATIVANDO O TRAFEGO ENTRE AS PLACAS DE REDE ###
+echo "1" > /proc/sys/net/ipv4/ip_forward
+echo "DESATIVANDO ip_forward: OFF...........................[ OK ]"
+
+# ATIVANDO O ANTI-REDIRECTS
+echo 0 > /proc/sys/net/ipv4/conf/all/accept_redirects
+echo "Setando anti-redirects ...............................[ OK ]"
+
+#Isso possibilita que o atacante determine o "caminho" que seu
+# pacote vai percorrer (roteadores) ate seu destino. Junto com spoof, isso se torna muito perigoso.
+echo 0 > /proc/sys/net/ipv4/conf/all/accept_source_route
+echo "Setando anti-source_route ........................... [ OK ]"
+
+# PROTENCAO CONTRA BOGUS
+echo 1 > /proc/sys/net/ipv4/icmp_ignore_bogus_error_responses
+echo "Setando anti-responses bogus .........................[ OK ]"
+
+# Protecao contra ataques de syn flood (inicio da conexao TCP). Tenta conter ataques de DoS.
+echo 1 > /proc/sys/net/ipv4/tcp_syncookies
+echo "Setando protecao anti-synflood .......................[ OK ]"
+
+### Carregando os modulos do iptables ###
+modprobe ip_tables
+modprobe iptable_nat
+modprobe ip_gre
+modprobe ip_nat_pptp
+modprobe ip_conntrack
+modprobe iptable_filter
+modprobe iptable_mangle
+modprobe ipt_LOG
+modprobe ipt_limit
+modprobe ipt_state
+modprobe ipt_multiport
+modprobe ip_conntrack_ftp
+echo "Carregando modulos iptables's ........................[ OK ]"
+
+# Protecao contra port scanners
+iptables -N SCANNER
+iptables -A SCANNER -m limit --limit 2/m -j LOG --log-prefix "FIREWALL: port scanner: "
+iptables -A SCANNER -j DROP
+iptables -A INPUT -p tcp --tcp-flags ALL FIN,URG,PSH -i eth0 -j SCANNER
+iptables -A INPUT -p tcp --tcp-flags ALL NONE -i eth0 -j SCANNER
+iptables -A INPUT -p tcp --tcp-flags ALL ALL -i eth0 -j SCANNER
+iptables -A INPUT -p tcp --tcp-flags ALL FIN,SYN -i eth0 -j SCANNER
+iptables -A INPUT -p tcp --tcp-flags ALL SYN,RST,ACK,FIN,URG -i eth0 -j SCANNER
+iptables -A INPUT -p tcp --tcp-flags SYN,RST SYN,RST -i eth0 -j SCANNER
+iptables -A INPUT -p tcp --tcp-flags SYN,FIN SYN,FIN -i eth0 -j SCANNER
+echo "Scanner de Portas ....................................[ OK ]"
+
+# Libera acesso externo a determinadas 
+ 
+# Algumas portas devem ser negadas.
+iptables -A INPUT -p tcp --dport 6670 -j DROP
+iptables -A INPUT -p tcp --dport 6711 -j DROP
+iptables -A INPUT -p tcp --dport 6712 -j DROP
+iptables -A INPUT -p tcp --dport 6713 -j DROP
+iptables -A INPUT -p tcp --dport 12345 -j DROP
+iptables -A INPUT -p tcp --dport 12346 -j DROP
+iptables -A INPUT -p tcp --dport 20034 -j DROP
+iptables -A INPUT -p tcp --dport 31337 -j DROP
+iptables -A INPUT -p tcp --dport 6000  -j DROP
+echo "Negando portas invalidas ............................ [ OK ]"
+
+# Traceroutes caindo
+iptables -A INPUT -p udp --dport 33434:33523 -j DROP
+iptables -A INPUT -p tcp --dport 113 -j REJECT
+iptables -A INPUT -p icmp -j REJECT
+iptables -A INPUT -p tcp --dport 80 -j DROP
+iptables -A INPUT -p tcp --dport 443 -j REJECT
+echo "Traceroute Caindo ................................... [ OK ]"
+
+
+# Protecao contra tronjans
+iptables -A INPUT -p TCP -i eth0 --dport 666 -j DROP
+iptables -A INPUT -p TCP -i eth0 --dport 4000 -j DROP
+iptables -A INPUT -p TCP -i eth0 --dport 6000 -j DROP
+iptables -A INPUT -p TCP -i eth0 --dport 6006 -j DROP
+iptables -A INPUT -p TCP -i eth0 --dport 16660 -j DROP
+echo "Protecao contra Trojans ............................. [ OK ]"
+ 
+# Protecao contra trinoo
+iptables -A INPUT -p TCP -i eth0 --dport 27444 -j DROP
+iptables -A INPUT -p TCP -i eth0 --dport 27665 -j DROP
+iptables -A INPUT -p TCP -i eth0 --dport 31335 -j DROP
+iptables -A INPUT -p TCP -i eth0 --dport 34555 -j DROP
+iptables -A INPUT -p TCP -i eth0 --dport 35555 -j DROP
+iptables -A INPUT -p TCP -i eth0 --dport 9666 -j DROP
+echo "Protecao contra trinoo ...............................[ OK ]"
+
+# Protecao contra P2P
+iptables -A FORWARD -p tcp --dport 1214:1215 -j DROP
+iptables -A FORWARD -p udp --dport 1214:1215 -j DROP
+iptables -A FORWARD -p tcp --dport 1981 -j DROP
+iptables -A FORWARD -p udp --dport 1981 -j DROP
+iptables -A FORWARD -p tcp --dport 2037 -j DROP
+iptables -A FORWARD -p udp --dport 2037 -j DROP
+iptables -A FORWARD -p tcp --dport 3501 -j DROP
+iptables -A FORWARD -p udp --dport 3501 -j DROP
+iptables -A FORWARD -p tcp --dport 3531 -j DROP
+iptables -A FORWARD -p udp --dport 3531 -j DROP
+iptables -A FORWARD -p tcp --dport 3587 -j DROP
+iptables -A FORWARD -p udp --dport 3587 -j DROP
+iptables -A FORWARD -p tcp --dport 3955 -j DROP
+iptables -A FORWARD -p udp --dport 3955 -j DROP
+iptables -A FORWARD -p tcp --dport 4242 -j DROP
+iptables -A FORWARD -p udp --dport 4242 -j DROP
+iptables -A FORWARD -p tcp --dport 4661:4672 -j DROP
+iptables -A FORWARD -p udp --dport 4661:4672 -j DROP
+iptables -A FORWARD -p tcp --dport 4688 -j DROP
+iptables -A FORWARD -p udp --dport 4688 -j DROP
+iptables -A FORWARD -p tcp --dport 5121 -j DROP
+iptables -A FORWARD -p udp --dport 5121 -j DROP
+iptables -A FORWARD -p tcp --dport 5662 -j DROP
+iptables -A FORWARD -p udp --dport 5662 -j DROP
+iptables -A FORWARD -p tcp --dport 6085:6086 -j DROP
+iptables -A FORWARD -p udp --dport 6085:6086 -j DROP
+iptables -A FORWARD -p tcp --dport 6346:6347 -j DROP
+iptables -A FORWARD -p udp --dport 6346:6347 -j DROP
+iptables -A FORWARD -p tcp --dport 6699 -j DROP
+iptables -A FORWARD -p udp --dport 6699 -j DROP
+iptables -A FORWARD -p udp --dport 6881:6889 -j DROP
+iptables -A FORWARD -p tcp --dport 6881:6889 -j DROP
+iptables -A FORWARD -p tcp --dport 8473 -j DROP
+iptables -A FORWARD -p udp --dport 8473 -j DROP
+
+echo "Bloqueando softwares P2P .............................[ OK ]"
+
+#LIBERANDO  ALGUNS IPs NA REDE
+#iptables -I FORWARD -s #ip -d $i -j ACCEPT  #
+# Protecao contra telnet
+iptables -A INPUT -p TCP -i eth0 --dport telnet -j DROP
+echo "Protecao contra telnet .............................. [ OK ]"
+ 
+# Dropa pacotes TCP indesejaveis
+iptables -A FORWARD -p tcp ! --syn -m state --state NEW -j DROP
+echo "Protecao contra pacotes indesejaveis .................[ OK ]"
+ 
+# Dropa pacotes mal formados
+#iptables -A INPUT -i eth1 -m unclean -j DROP
+echo "Protecao contra pacotes mal formados .................[ OK ]"
+ 
+# Protecao contra worms
+iptables -A FORWARD -p tcp --dport 135 -i eth0 -j REJECT
+echo "Protecao contra worms ................................[ OK ]"
+
+# ativar o mascaramento (nat).
+iptables -t nat -A POSTROUTING -o eth0 -j MASQUERADE
+iptables -A FORWARD -p tcp --tcp-flags SYN,RST SYN -m tcpmss --mss 1400:1536 -j TCPMSS --clamp-mss-to-pmtu
+echo "Ativando o NAT .......................................[ OK ]"
+
+### Passo 5: Agora, vamos definir o que pode passar e o que nao ###
+# Cadeia de Entrada
+
+# LOOPBACK
+iptables -A INPUT -i lo -j ACCEPT
+
+
+# DEFININDO AS PORTAS ACEITAS COM MULTIPORT
+iptables -A INPUT -p tcp -m multiport --dport 80,1194,22,587,443,143,53,110,25 -j ACCEPT
+
+
+# SQUID
+#iptables -t nat -A PREROUTING -i eth1 -p tcp --dport 80 -j REDIRECT --to-port 3128
+#iptables -A FORWARD -i  eth1 -p tcp --dport 3128 -j ACCEPT
+
+
+# No iptables, temos de dizer quais sockets sao validos em uma conexao
+iptables -A INPUT -m state --state ESTABLISHED,RELATED,NEW -j ACCEPT
+echo "Setando a chain INPUT ................................[ OK ]"
+
+# Soquetes Validos
+iptables -A FORWARD -m state --state ESTABLISHED,RELATED,NEW -j ACCEPT
+echo "Soquetes Validos .....................................[ OK ]"
+
+# DNAT
+#iptables -t nat -A PREROUTING -p tcp --dport #porta i eth0 -j DNAT --to #porta 
+#echo "Redirecionamento de Portas ..................[ OK ]"
+
+
+######### BLOQUEIA SITES HTTPS###########
+#for s in `cat /etc/squid/sites_https`; do
+#iptables -I FORWARD -i eth1 -m string --algo bm --string "$s" -j REJECT
+#done
+
+########DESBLOQUEIA SITES HTTPS QUE ESTEJAM COM IPS LIBERADOS#######
+#for g in `cat /etc/squid/sites_https`; do
+#for t in `cat /etc/squid/ip_diretores`; do
+#iptables -I FORWARD -i eth1 -s $t -m string --algo bm --string "$g" -j ACCEPT
+#done
+#echo "Bloqueando Youtube HTTPS ...........[ OK ]"
+
+# BLOQUEANDO TODAS AS PORTAS DE SAIDA E ENTRADA
+iptables -A INPUT -p all -j DROP
+iptables -A FORWARD -p all -j DROP  
+echo "REJEITANDO TUDO.......................................[ OK ]"
+
+# ATIVANDO O TRAFEDO ENTRE AS REDES
+echo "1" > /proc/sys/net/ipv4/ip_forward
+echo "Habilitando ip_forward: ON ...........................[ OK ]"
+echo "FINALIZADO:...........................................[ OK ]"
+echo "============================================================"
