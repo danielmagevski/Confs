@@ -1,7 +1,7 @@
 #!/bin/bash
 
 
-#####ESSE ARQUIVO DEVE FICAR NO "/etc.init.d" E COM PERMISSAO DE EXECUÇÃO#######
+#####ESSE ARQUIVO DEVE FICAR NO "/etc.init.d" E COM PERMISSAO DE EXECUCAO#######
 
 REDE_INTERNA="10.0.0.0/8"
 
@@ -23,7 +23,7 @@ iptables -F
 iptables -X
 iptables -t nat -F
 iptables -t nat -X
-echo "LIMPANDO TODAS AS REGRAS ......................................[ OK ]"
+echo "LIMPANDO TODAS AS REGRAS .............................[ OK ]"
 
 # CADEAIS PADROES
 iptables -P INPUT DROP
@@ -208,8 +208,8 @@ iptables -A INPUT -p tcp -m multiport --dport 80,1194,22,587,443,143,53,110,25 -
 
 
 # SQUID
-#iptables -t nat -A PREROUTING -i eth1 -p tcp --dport 80 -j REDIRECT --to-port 3128
-#iptables -A FORWARD -i  eth1 -p tcp --dport 3128 -j ACCEPT
+iptables -t nat -A PREROUTING -i eth1 -p tcp --dport 80 -j REDIRECT --to-port 3128
+iptables -A FORWARD -i  eth1 -p tcp --dport 3128 -j ACCEPT
 
 
 # No iptables, temos de dizer quais sockets sao validos em uma conexao
@@ -226,16 +226,18 @@ echo "Soquetes Validos .....................................[ OK ]"
 
 
 ######### BLOQUEIA SITES HTTPS###########
-#for s in `cat /etc/squid/sites_https`; do
-#iptables -I FORWARD -i eth1 -m string --algo bm --string "$s" -j REJECT
-#done
+for s in `cat /etc/squid3/sites_https`; do
+iptables -I FORWARD -i eth1 -m string --algo bm --string "$s" -j REJECT
+done
+echo "Desbloqueando sites HTTPS ............................[ OK ]"
 
 ########DESBLOQUEIA SITES HTTPS QUE ESTEJAM COM IPS LIBERADOS#######
-#for g in `cat /etc/squid/sites_https`; do
-#for t in `cat /etc/squid/ip_diretores`; do
-#iptables -I FORWARD -i eth1 -s $t -m string --algo bm --string "$g" -j ACCEPT
-#done
-#echo "Bloqueando Youtube HTTPS ...........[ OK ]"
+for g in `cat /etc/squid3/sites_https`; do
+for t in `cat /etc/squid3/ip_liberados`; do
+iptables -I FORWARD -i eth1 -s $t -m string --algo bm --string "$g" -j ACCEPT
+done
+done
+echo "Bloqueando sites HTTPS ...............................[ OK ]"
 
 # BLOQUEANDO TODAS AS PORTAS DE SAIDA E ENTRADA
 iptables -A INPUT -p all -j DROP
