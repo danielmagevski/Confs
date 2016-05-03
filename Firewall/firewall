@@ -23,7 +23,7 @@ iptables -F
 iptables -X
 iptables -t nat -F
 iptables -t nat -X
-echo "LIMPANDO TODAS AS REGRAS .............................[ OK ]"
+echo "LIMPANDO TODAS AS REGRAS ......................................[ OK ]"
 
 # CADEAIS PADROES
 iptables -P INPUT DROP
@@ -202,7 +202,6 @@ echo "Ativando o NAT .......................................[ OK ]"
 # LOOPBACK
 iptables -A INPUT -i lo -j ACCEPT
 
-
 # DEFININDO AS PORTAS ACEITAS COM MULTIPORT
 iptables -A INPUT -p tcp -m multiport --dport 80,1194,22,587,443,143,53,110,25 -j ACCEPT
 
@@ -226,18 +225,17 @@ echo "Soquetes Validos .....................................[ OK ]"
 
 
 ######### BLOQUEIA SITES HTTPS###########
-for s in `cat /etc/squid3/sites_https`; do
+for s in `cat /etc/squid/sites_https`; do
 iptables -I FORWARD -i eth1 -m string --algo bm --string "$s" -j REJECT
 done
-echo "Desbloqueando sites HTTPS ............................[ OK ]"
 
 ########DESBLOQUEIA SITES HTTPS QUE ESTEJAM COM IPS LIBERADOS#######
-for g in `cat /etc/squid3/sites_https`; do
-for t in `cat /etc/squid3/ip_liberados`; do
+for g in `cat /etc/squid/sites_https`; do
+for t in `cat /etc/squid/ip_liberados`; do
 iptables -I FORWARD -i eth1 -s $t -m string --algo bm --string "$g" -j ACCEPT
 done
 done
-echo "Bloqueando sites HTTPS ...............................[ OK ]"
+echo "Desbloquando HTTPS ...................................[ OK ]"
 
 # BLOQUEANDO TODAS AS PORTAS DE SAIDA E ENTRADA
 iptables -A INPUT -p all -j DROP
