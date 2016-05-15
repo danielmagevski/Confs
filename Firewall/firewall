@@ -32,22 +32,13 @@ iptables -P OUTPUT ACCEPT
 echo "CADEIAS PADROES ......................................[ OK ]"
 
 # BLOQUANDO ALGUNS IPs
-iptables -I FORWARD -s 92.255.176.55 -j DROP
-iptables -I FORWARD -s 76.74.112.108 -j DROP
-iptables -I FORWARD -s 93.174.95.77 -j DROP
-iptables -I FORWARD -s 211.37.220.146 -j DROP
-iptables -I FORWARD -s 212.129.57.149 -j DROP
-iptables -I FORWARD -s 213.123.216.219 -j DROP
-iptables -I FORWARD -s 200.208.159.21 -j DROP
-iptables -I FORWARD -s 72.64.230.14 -j DROP
-iptables -I FORWARD -s 116.21.174.93 -j DROP
-iptables -A INPUT -s 116.21.174.93 -j DROP
-iptables -I FORWARD -s 173.162.202.41 -j DROP
-iptables -A INPUT -s 173.162.202.41 -j DROP
-echo "BLOQUEANDO IPs........................................[ OK ]"
+#iptables -I FORWARD -s 0.0.0.0 -j DROP
+#iptables -A INPUT -s 0.0.0.0 -j DROP
+#echo "BLOQUEANDO IPs........................................[ OK ]"
 
-#LIBERANDO ACESSO PARA UM IP ESPECIFICO
+#LIBERANDO ACESSO PARA UM IPs ESPECIFICO
 #iptables -A INPUT -s 000.000.000.000 -j ACCEPT
+#echo "LIBERANDO IPs.........................................[ OK ]"
 
 # Regra para que não "derrube" conexões já estabelecidas
 iptables -A INPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
@@ -116,7 +107,7 @@ iptables -A INPUT -p tcp --dport 31337 -j DROP
 iptables -A INPUT -p tcp --dport 6000  -j DROP
 echo "Negando portas invalidas ............................ [ OK ]"
 
-# Traceroutes caindo
+# Traceroutes / ICMP caindo
 iptables -A INPUT -p udp --dport 33434:33523 -j DROP
 iptables -A INPUT -p tcp --dport 113 -j REJECT
 iptables -A INPUT -p icmp -j REJECT
