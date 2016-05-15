@@ -46,6 +46,13 @@ iptables -I FORWARD -s 173.162.202.41 -j DROP
 iptables -A INPUT -s 173.162.202.41 -j DROP
 echo "BLOQUEANDO IPs........................................[ OK ]"
 
+#LIBERANDO ACESSO PARA UM IP ESPECIFICO
+#iptables -A INPUT -s 000.000.000.000 -j ACCEPT
+
+# Regra para que não "derrube" conexões já estabelecidas
+iptables -A INPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
+iptables -A OUTPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
+
 ### DESATIVANDO O TRAFEGO ENTRE AS PLACAS DE REDE ###
 echo "1" > /proc/sys/net/ipv4/ip_forward
 echo "DESATIVANDO ip_forward: OFF...........................[ OK ]"
