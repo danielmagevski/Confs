@@ -38,6 +38,7 @@ echo "CADEIAS PADROES ......................................[ OK ]"
 
 #LIBERANDO ACESSO PARA UM IPs ESPECIFICO
 #iptables -A INPUT -s 000.000.000.000 -j ACCEPT
+#iptables -A FORWARD -s 000.000.000.000 -j ACCEPT
 #echo "LIBERANDO IPs.........................................[ OK ]"
 
 # Regra para que não "derrube" conexões já estabelecidas
