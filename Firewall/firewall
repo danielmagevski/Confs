@@ -46,8 +46,8 @@ iptables -A INPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
 iptables -A OUTPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
 
 ### DESATIVANDO O TRAFEGO ENTRE AS PLACAS DE REDE ###
-echo "1" > /proc/sys/net/ipv4/ip_forward
-echo "DESATIVANDO ip_forward: OFF...........................[ OK ]"
+echo "0" > /proc/sys/net/ipv4/ip_forward
+echo "DEATIVANDO ip_forward: OFF...........................[ OK ]"
 
 # ATIVANDO O ANTI-REDIRECTS
 echo 0 > /proc/sys/net/ipv4/conf/all/accept_redirects
